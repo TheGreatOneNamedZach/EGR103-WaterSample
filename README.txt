@@ -20,7 +20,7 @@
 EGR 103-005-005
 Created by the team:
 Double O' Five
-Fall of 2024
+Spring of 2024
 
 Welcome to our humble abode! This script directory is object-oriented.
   This means the code is easy to use, but hard to navigate. As such, this
