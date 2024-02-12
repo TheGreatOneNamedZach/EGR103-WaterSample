@@ -1,5 +1,4 @@
-function appStart()
-ws = save("waterSampler");
-ws.stopSafe = true;
+function [stopSafe] = appStart(stopSafe)
+stopSafe = ~stopSafe;
 end
 
