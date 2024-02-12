@@ -41,7 +41,7 @@ fig.Position(3:4) = [imgSize(2), imgSize(1)]; % Expands the figure to fit everyt
 fig.WindowState = 'maximized'; % Maximizes the uifigure window
 
 ax = uiaxes(fig, 'Position', [0, 0, imgSize(2), imgSize(1)]); % Constructs camera image
-btn = uibutton(fig, 'push', 'Text', 'Stop', 'Position', [100, 100, 100, 30]);
+% btn = uibutton(fig, 'push', 'Text', 'Stop', 'Position', [100, 100, 100, 30]);
 % btn.ButtonPushedFcn = @(~, ~) appStart(stopSafe);
 
 
