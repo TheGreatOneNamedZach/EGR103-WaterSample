@@ -1,8 +1,7 @@
 % The primary parent script for the water sample project.
-% 6 hours
+close all;
 clear;
 clc;
-
 
 camList = string(webcamlist); % Creates a list of all valid cameras
 camList(2) = "Dummy Webcam";
@@ -36,14 +35,13 @@ stopSafe = false;
 stopNow = false;
 
 % Constructs the uifigure to display everything
-fig = uifigure("Name","Water Sampler", "Icon","other/WaterDrop.png");
-fig.Position(3:4) = [imgSize(2), imgSize(1)]; % Expands the figure to fit everything
-fig.WindowState = 'maximized'; % Maximizes the uifigure window
+wS_GUI = uifigure("Name","Water Sampler", "Icon","other/WaterDrop.png");
+wS_GUI.Position(3:4) = [imgSize(2), imgSize(1)]; % Expands the figure to fit everything
+wS_GUI.WindowState = 'maximized'; % Maximizes the uifigure window
 
-ax = uiaxes(fig, 'Position', [0, 0, imgSize(2), imgSize(1)]); % Constructs camera image
+ax = uiaxes(wS_GUI, 'Position', [0, 0, imgSize(2), imgSize(1)]); % Constructs camera image
 % btn = uibutton(fig, 'push', 'Text', 'Stop', 'Position', [100, 100, 100, 30]);
 % btn.ButtonPushedFcn = @(~, ~) appStart(stopSafe);
-
 
 tic; % Declares timer and starts it.
 
