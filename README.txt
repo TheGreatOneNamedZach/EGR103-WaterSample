@@ -28,22 +28,24 @@ Welcome to our humble abode! This script directory is object-oriented.
   This means the code is easy to use, but hard to navigate. As such, this
   file "README.txt" will give a summary of every file in this directory.
   First, lets start with the highest parent files:
-    * The "action" folder contains every sub-system.
     * The "initialize" folder contains the files to be executed.
     * The "other" folder contains test and miscellaneous scripts.
     * The "README" text file acts as a guide to the projects code.
     * The "LICENSE" text file contains the projects license (MPL 2.0).
 
-  Next, the "action" folder:
-    * The 
-
   Next, the "initialize" folder:
-    * The "main" script is the main official script ran for the project.
+    * The "waterSampler" script is the main script ran for the project.
+    * The "waterSamplerGUI" app contains sub-system code. DON'T RUN THIS!
 
   Finally, the "other" folder:
     * The "Wildzach" script contains Zachary's EGR 101 final project.
         It has working code for processing and manipulating images and is
         used as the framework for the vision system.
+    * The "ImageProcessingExample" shows a working example of how to use
+        bounding boxes and image recognition.
+    * The "Cyan_Pink_Stickers" image is for the "ImageProcessingExample" script.
+    * The "WaterDrop" image is for the "waterSamplerGUI" app.
+    * The "secrets" text file contains any secrets used. (local file)
 
 If you want to run this project, make sure you add the file
   "EGR103_WaterSample" to the working directory in MATLAB! Here is how:
