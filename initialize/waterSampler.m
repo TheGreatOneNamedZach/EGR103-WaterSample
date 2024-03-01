@@ -28,4 +28,6 @@ end
 
 cam = webcam(camList(webcamNum)); % Constructs a webcam object
 
+ranFromWaterSamplerScript = true; % Verifies app was ran from script
+
 waterSamplerGUI; % Opens the app
