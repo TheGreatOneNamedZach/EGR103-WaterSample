@@ -41,9 +41,12 @@ Welcome to our humble abode! This script directory is object-oriented.
     * The "Wildzach" script contains Zachary's EGR 101 final project.
         It has working code for processing and manipulating images and is
         used as the framework for the vision system.
-    * The "ImageProcessingExample" shows a working example of how to use
-        bounding boxes and image recognition.
+    * The "AppForArduinoLML" app contains a working example of how to use
+        the pieces and parts of a MATLAB app.
+    * The "ImageProcessingExample" script shows a working example of how to
+        use bounding boxes and image recognition.
     * The "Cyan_Pink_Stickers" image is for the "ImageProcessingExample" script.
+    * The "ColdHot" image is for the "AppForArduinoLML" app.
     * The "WaterDrop" image is for the "waterSamplerGUI" app.
     * The "secrets" text file contains any secrets used. (local file)
 
