@@ -43,6 +43,10 @@ Welcome to our humble abode! This script directory is object-oriented.
         used as the framework for the vision system.
     * The "AppForArduinoLML" app contains a working example of how to use
         the pieces and parts of a MATLAB app.
+    * The "GUI_ProofOfConcept" folder contains Zachary's proof of concept
+        for the GUI sub-system.
+        * The "ExampleHydroponicData" spreadsheet is given test data.
+        * The "GUI_POC" app is the proof of concept app.
     * The "ImageProcessingExample" script shows a working example of how to
         use bounding boxes and image recognition.
     * The "Cyan_Pink_Stickers" image is for the "ImageProcessingExample" script.
