@@ -3,7 +3,6 @@ close all;
 clear;
 clc;
 
-%a = arduino(); % Initializes the Arduino
 camList = string(webcamlist); % Creates a list of all valid cameras
 camList(2) = "Dummy Webcam";
 
@@ -27,6 +26,8 @@ while (webcamNum > length(camList)) || (webcamNum < 0)
 end
 
 cam = webcam(camList(webcamNum)); % Constructs a webcam object
+
+%a = arduino(); % Initializes the Arduino
 
 ranFromWaterSamplerScript = true; % Verifies app was ran from script
 

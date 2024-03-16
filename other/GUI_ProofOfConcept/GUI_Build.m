@@ -3,7 +3,6 @@ close all;
 clear;
 clc;
 
-%a = arduino(); % Initializes the Arduino
 camList = string(webcamlist); % Creates a list of all valid cameras
 camList(2) = "Dummy Webcam";
 
@@ -26,8 +25,18 @@ while (webcamNum > length(camList)) || (webcamNum < 0)
     webcamNum = floor(input("Select the webcam by entering it's number: "));
 end
 
+stepsPerRevolution = 2048; % Stepper steps per 1 revolution
+
 cam = webcam(camList(webcamNum)); % Constructs a webcam object
+
+a = arduino(); % Initializes the Arduino
+
+% Setup a stepper with the following pins
+thisStepper = StepperRevA(a, stepsPerRevolution, 'D4', 'D5', 'D6', 'D7');
+
+% Initialize a servo with Pin 3
+s = servo(a, 'D3', 'MinPulseDuration', 700*10^-6, 'MaxPulseDuration', 2300*10^-6);
 
 ranFromWaterSamplerScript = true; % Verifies app was ran from script
 
-waterSamplerGUI; % Opens the app
+GUI_BuildGUI; % Opens the app
