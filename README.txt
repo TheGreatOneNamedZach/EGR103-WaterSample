@@ -36,6 +36,8 @@ Welcome to our humble abode! This script directory is object-oriented.
   Next, the "initialize" folder:
     * The "waterSampler" script is the main script ran for the project.
     * The "waterSamplerGUI" app contains sub-system code. DON'T RUN THIS!
+    * The "waterSamplerGUI_PREVIEW" script is a preview of the code of the
+        app with the same name. THIS IS A PREVIEW ONLY. DON'T RUN THIS!
 
   Finally, the "other" folder:
     * The "Wildzach" script contains Zachary's EGR 101 final project.
@@ -43,16 +45,28 @@ Welcome to our humble abode! This script directory is object-oriented.
         used as the framework for the vision system.
     * The "AppForArduinoLML" app contains a working example of how to use
         the pieces and parts of a MATLAB app.
+    * The "AppForArduinoLML_PREVIEW" script is a preview of the code of the
+        app with the same name. THIS IS A PREVIEW ONLY. DON'T RUN THIS!
     * The "GUI_ProofOfConcept" folder contains Zachary's proof of concept
         for the GUI sub-system.
         * The "ExampleHydroponicData" spreadsheet is given test data.
         * The "GUI_POC" app is the proof of concept app.
+        * The "GUI_POC_PREVIEW" script is a preview of the code of the app
+            with the same name. THIS IS A PREVIEW ONLY. DON'T RUN THIS!
+    * The "GUI_Build" script contains the executing code for the Build of Concept.
+    * The "GUI_BuildGUI" app contains the GUI for the Build of Concept. DON'T RUN THIS!
+    * The "GUI_BuildGUI_PREVIEW" script contains a preview of the app with
+        the same name. THIS IS A PREVIEW ONLY. DON'T RUN THIS!
     * The "ImageProcessingExample" script shows a working example of how to
         use bounding boxes and image recognition.
     * The "Cyan_Pink_Stickers" image is for the "ImageProcessingExample" script.
     * The "ColdHot" image is for the "AppForArduinoLML" app.
     * The "WaterDrop" image is for the "waterSamplerGUI" app.
     * The "secrets" text file contains any secrets used. (local file)
+
+Why is there previews of all the app files?
+  This is because GitHub treats the app files as binary files. The preview
+  files allow you to view a copy of the code of the app files on GitHub.
 
 If you want to run this project, make sure you add the file
   "EGR103_WaterSample" to the working directory in MATLAB! Here is how:
