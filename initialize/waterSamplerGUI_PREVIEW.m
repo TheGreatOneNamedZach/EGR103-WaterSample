@@ -401,9 +401,18 @@ This script is a preview of "waterSamplerGUI.mlapp"
         function SCRAMButtonPushed(app, event)
             if ~(app.wS_State == "SCRAM")
                 app.stopRequested = true; % Declares a request to stop
-                pause(1.000); % Waits for the while loop to stop
                 app.wS_State = "SCRAM"; % If not already, then do so
-                
+                pause(1.000); % Waits for the while loop to stop
+
+                % Tell all motors to stop moving
+
+                % TODO: Write directly to the motors and tell them to move
+                % 0 distance. DO NOT CALL THE FUNCTIONS!
+
+
+
+                wS_LogCentral(app, "USER", "SCRAMing the water sampler...");
+
                 % Sets the background color to red
                 app.GridLayout.BackgroundColor = [0.80, 0.00, 0.00];
 
@@ -411,11 +420,6 @@ This script is a preview of "waterSamplerGUI.mlapp"
                 app.StartButton.BackgroundColor = [0.39, 0.83, 0.07];
                 app.SCRAMButton.BackgroundColor = [0.47, 0.47, 0.47];
                 app.StopButton.BackgroundColor = [0.00, 0.45, 0.74];
-                
-                wS_LogCentral(app, "USER", "SCRAMing the water sampler...");
-
-                % Tell all motors to stop moving
-
             end
         end
 
