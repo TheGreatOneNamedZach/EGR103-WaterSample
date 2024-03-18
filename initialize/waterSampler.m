@@ -1,10 +1,7 @@
 % The primary parent script for the water sample project.
 close all;
-clear;
-clc;
 
 camList = string(webcamlist); % Creates a list of all valid cameras
-camList(2) = "Dummy Webcam";
 
 webcamNum = 99; % The webcam index number choosen by the user. Dummy value of 99
 % Loops until the user chooses a valid webcam
