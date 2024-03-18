@@ -49,6 +49,27 @@ This script is a preview of "waterSamplerGUI.mlapp"
 
     methods (Access = private)
         
+        % A GUIDE TO LOG CODES.
+        % (C)   -  This means the timestamp is based on the time elapsed
+        %          since the "Start" button was pressed.
+        % 
+        % (I)   -  This means the timestamp is based on the time elapsed
+        %          since the last action ended.
+        % 
+        % USER  -  This means the USER did something. Any action taken by
+        %          the user is logged under this code.
+        % 
+        % EVNT  -  This means an EVENT was logged. Events are processes
+        %          automatatically started by the water sampler.
+        % 
+        % INFO  -  This means INFOrmation was output by the water sampler.
+        %          This is usually required (by the assignment) to be output.
+        % 
+        % ERR   -  This means an known ERRor occured. An error log was
+        %          output to help diagnose the issue.
+        % 
+
+
         % Sends a log to the log GUI area with the Central Timer
         function wS_LogCentral(app, level, message)
             app.LogsText.Value = [sprintf("(C) %7.3f - [%s] %s", toc(app.centralTimer), level, message); app.LogsText.Value];
@@ -86,8 +107,7 @@ This script is a preview of "waterSamplerGUI.mlapp"
             end
         end
 
-        % The code for the vision sub-system to detect the distance
-        %   between the pipette and the waste
+        % The code for the vision sub-system to detect the OCR label
         % app - passes in the app object for use of variables
         % visionOCR_Detected - Was anything detected?
         % visionOCR_Label - The label detected
@@ -205,7 +225,7 @@ This script is a preview of "waterSamplerGUI.mlapp"
     
                 wS_LogCentral(app, "USER", "Starting the water sampler...");
 
-                wS_LogCentral(app, "INFO", "Restarting the timer...");
+                wS_LogCentral(app, "EVNT", "Restarting the timer...");
                 app.centralTimer = tic; % Restarts the Central Timer
     
                 app.internalTimer = tic; % Restarts the Internal Timer
@@ -232,7 +252,7 @@ This script is a preview of "waterSamplerGUI.mlapp"
 
                             % Picks up the sample
                             wS_Pipette(app, 10, 0.75);
-                            pause(0.25);
+                            pause(2.000);
                             wS_Pipette(app, -10, 0.75);
 
                             app.action = app.action + 1; % app.action++;
@@ -278,7 +298,7 @@ This script is a preview of "waterSamplerGUI.mlapp"
 
                             % Drops the sample
                             wS_Pipette(app, -10, 0.75);
-                            pause(0.25);
+                            pause(2.000);
                             wS_Pipette(app, 10, 0.75);
 
                             app.action = app.action + 1; % app.action++;
@@ -303,6 +323,14 @@ This script is a preview of "waterSamplerGUI.mlapp"
                             % OCR detection
                             wS_VisionOCR(app);
 
+                            wS_LogCentral(app, "INFO", " ");
+                            wS_LogCentral(app, "INFO", "------------------------------------");
+                            wS_LogCentral(app, "INFO", " ");
+                            wS_LogCentral(app, "INFO", "OCR label is: " + app.visionOCR_Label);
+                            wS_LogCentral(app, "INFO", " ");
+                            wS_LogCentral(app, "INFO", "------------------------------------");
+                            wS_LogCentral(app, "INFO", " ");
+
                             app.action = app.action + 1; % app.action++;
                             app.internalTimer = tic; % Restarts the Internal Timer
 
@@ -313,6 +341,14 @@ This script is a preview of "waterSamplerGUI.mlapp"
 
                             % Pipette distance detection
                             wS_VisionDistance(app);
+
+                            wS_LogCentral(app, "INFO", " ");
+                            wS_LogCentral(app, "INFO", "------------------------------------");
+                            wS_LogCentral(app, "INFO", " ");
+                            wS_LogCentral(app, "INFO", "Pipette distance is: " + app.visionPipette_Distance);
+                            wS_LogCentral(app, "INFO", " ");
+                            wS_LogCentral(app, "INFO", "------------------------------------");
+                            wS_LogCentral(app, "INFO", " ");
 
                             app.action = app.action + 1; % app.action++;
                             app.internalTimer = tic; % Restarts the Internal Timer
@@ -349,13 +385,13 @@ This script is a preview of "waterSamplerGUI.mlapp"
                 wS_LogCentral(app, "USER", "Stopping the water sampler...");
     
                 % Stops the webcam
-                wS_LogCentral(app, "INFO", "Stopping webcam...");
+                wS_LogCentral(app, "EVNT", "Stopping webcam...");
                 pause(0.250); % Pause to ensure it does not call a deleted object
                 delete(app.cam); % Closes the webcam (turns off the camera)
     
                 % Returns motors to home
 
-                wS_LogCentral(app, "INFO", "Stopping app...");
+                wS_LogCentral(app, "EVNT", "Stopping app...");
                 pause(3.000);
                 delete(app); % Closes the app
             end
