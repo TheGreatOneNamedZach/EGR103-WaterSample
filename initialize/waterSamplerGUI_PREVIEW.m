@@ -41,6 +41,10 @@ This script is a preview of "waterSamplerGUI.mlapp"
         stopRequested = false; % When "Stop" is pressed
         wS_State = "Stopped"; % Current state of the Water Sampler
         action = 0; % Current action being executed
+        visionPipette_Detected = false; % Did the vision system detect something?
+        visionPipette_Distance = 0; % How far the pipette needs to move
+        visionOCR_Detected = false; % Did the vision system detect something?
+        visionOCR_Label = ""; % The OCR label it detected
     end
 
     methods (Access = private)
@@ -57,20 +61,63 @@ This script is a preview of "waterSamplerGUI.mlapp"
             app.LogsText.Value = [sprintf("(I) %7.3f - [EVNT] %s system operating. Distance: %.2f. Speed: %.2f.", toc(app.internalTimer), system, distance, speed); app.LogsText.Value];
         end
 
-        % The code for the vision sub-system
+        % The code for the vision sub-system to detect the distance
+        %   between the pipette and the waste
         % app - passes in the app object for use of variables
-        function wS_Vision(app)
+        % visionPipette_Detected - Was anything detected?
+        % visionPipette_Distance - What is the distance to travel?
+        function wS_VisionDistance(app)
             % Logs that the vision system started.
-            wS_LogCentral(app, "INFO", "Vision system took a snapshot.");
+            app.LogsText.Value = [sprintf("(I) %7.3f - [EVNT] Vision system operating. Calculating pipette distance...", toc(app.internalTimer)); app.LogsText.Value];
+
+            picture = snapshot(app.cam);
 
             % VISION CODE GOES HERE
 
+
+
+            
+            % Logs if the vision system detected something.
+            % Also logs what the pipette distance will be
+            if(app.visionPipette_Detected)
+                app.LogsText.Value = [sprintf("(I) %7.3f - [EVNT] Vision system calculated a pipette distance of %.2f", toc(app.internalTimer), app.visionPipette_Distance); app.LogsText.Value];
+            else
+                app.LogsText.Value = [sprintf("(I) %7.3f - [EVNT] Vision system could not calculate a pipette distance. Fall back distance: %.2f", toc(app.internalTimer), app.visionPipette_Distance); app.LogsText.Value];
+            end
+        end
+
+        % The code for the vision sub-system to detect the distance
+        %   between the pipette and the waste
+        % app - passes in the app object for use of variables
+        % visionOCR_Detected - Was anything detected?
+        % visionOCR_Label - The label detected
+        function wS_VisionOCR(app)
+            % Logs that the vision system started.
+            app.LogsText.Value = [sprintf("(I) %7.3f - [EVNT] Vision system operating. Calculating OCR label...", toc(app.internalTimer)); app.LogsText.Value];
+
+            picture = snapshot(app.cam);
+            
+            % VISION CODE GOES HERE
+
+            % TODO: If no label is detected, DO NOT return a label.
+            %   This is so we can use the last label detected (if any).
+
+
+
+
+            % Logs if the vision system detected something.
+            % Also logs what the OCR label will be
+            if(app.visionOCR_Detected)
+                app.LogsText.Value = [sprintf("(I) %7.3f - [EVNT] Vision system detected an OCR label of '%s'", toc(app.internalTimer), app.visionOCR_Label); app.LogsText.Value];
+            else
+                app.LogsText.Value = [sprintf("(I) %7.3f - [EVNT] Vision system could not detect an OCR label. Fall back label is '%s'", toc(app.internalTimer), app.visionOCR_Label); app.LogsText.Value];
+            end
         end
         
         % The code for the rotational base sub-system
         % app - passes in the app object for use of variables
         % distance - the distance to rotate clockwise
-        % speed - the speed at which to travel (1.00 = top speed)
+        % speed - the speed at which to travel (1.00 = 100% power)
         function wS_Rotational(app, distance, speed)
             % Logs that the rotational base system was told to move.
             wS_LogAction(app, distance, speed, "Rotational");
@@ -82,7 +129,7 @@ This script is a preview of "waterSamplerGUI.mlapp"
         % The code for the pipette sub-system
         % app - passes in the app object for use of variables
         % distance - the distance to move towards the pipette
-        % speed - the speed at which to travel (1.00 = top speed)
+        % speed - the speed at which to travel (1.00 = 100% power)
         function wS_Pipette(app, distance, speed)
             % Logs that the pipette system was told to move.
             wS_LogAction(app, distance, speed, "Pipette");
@@ -94,7 +141,7 @@ This script is a preview of "waterSamplerGUI.mlapp"
         % The code for the rotational base sub-system
         % app - passes in the app object for use of variables
         % distance - the distance to travel upwards
-        % speed - the speed at which to travel (1.00 = top speed)
+        % speed - the speed at which to travel (1.00 = 100% power)
         function wS_Lift(app, distance, speed)
             % Logs that the lift system was told to move.
             wS_LogAction(app, distance, speed, "Lift");
@@ -170,33 +217,108 @@ This script is a preview of "waterSamplerGUI.mlapp"
                         if (app.action == 1)
                             % Action 1. Delay of 0.000 seconds
                             wS_LogCentral(app, "EVNT", "Action 1 starting...");
+                            app.Image.ImageSource = snapshot(app.cam); % Gets a snapshot of the webcam
 
-                            wS_Pipette(app, 123.45, 0.50); % Tests the pipette
+                            % Moves the lift down into a sample
+                            wS_Lift(app, -5, 0.50);
 
                             app.action = app.action + 1; % app.action++;
                             app.internalTimer = tic; % Restarts the Internal Timer
 
-                        elseif ((app.action == 2) && (toc(app.internalTimer) > 5.000))
-                            % Action 2. Delay of 5.000 seconds
+                        elseif ((app.action == 2) && (toc(app.internalTimer) > 3.000))
+                            % Action 2. Delay of 3.000 seconds
                             wS_LogCentral(app, "EVNT", "Action 2 starting...");
+                            app.Image.ImageSource = snapshot(app.cam); % Gets a snapshot of the webcam
 
-                            wS_Vision(app); % Tests the vision system
-                            wS_Rotational(app, 4, 1); % Tests the rotational system
+                            % Picks up the sample
+                            wS_Pipette(app, 10, 0.75);
+                            pause(0.25);
+                            wS_Pipette(app, -10, 0.75);
 
                             app.action = app.action + 1; % app.action++;
                             app.internalTimer = tic; % Restarts the Internal Timer
 
-                        elseif ((app.action == 3) && (toc(app.internalTimer) > 5.000))
-                            % Action 3. Delay of 5.000 seconds
+                        elseif ((app.action == 3) && (toc(app.internalTimer) > 3.000))
+                            % Action 3. Delay of 3.000 seconds
                             wS_LogCentral(app, "EVNT", "Action 3 starting...");
+                            app.Image.ImageSource = snapshot(app.cam); % Gets a snapshot of the webcam
 
-                            wS_Lift(app, -14, -0.32); % Tests the Lift system
+                            % Moves the lift back up
+                            wS_Lift(app, 5, 0.50);
 
                             app.action = app.action + 1; % app.action++;
                             app.internalTimer = tic; % Restarts the Internal Timer
+
+                        elseif ((app.action == 4) && (toc(app.internalTimer) > 3.000))
+                            % Action 4. Delay of 3.000 seconds
+                            wS_LogCentral(app, "EVNT", "Action 4 starting...");
+                            app.Image.ImageSource = snapshot(app.cam); % Gets a snapshot of the webcam
+
+                            % Rotates the rotational base
+                            wS_Rotational(app, 180, 1.00);
+
+                            app.action = app.action + 1; % app.action++;
+                            app.internalTimer = tic; % Restarts the Internal Timer
+
+                        elseif ((app.action == 5) && (toc(app.internalTimer) > 5.000))
+                            % Action 5. Delay of 5.000 seconds
+                            wS_LogCentral(app, "EVNT", "Action 5 starting...");
+                            app.Image.ImageSource = snapshot(app.cam); % Gets a snapshot of the webcam
+
+                            % Lowers the lift again
+                            wS_Lift(app, -5, 0.50);
+
+                            app.action = app.action + 1; % app.action++;
+                            app.internalTimer = tic; % Restarts the Internal Timer
+                            
+                        elseif ((app.action == 6) && (toc(app.internalTimer) > 3.000))
+                            % Action 6. Delay of 3.000 seconds
+                            wS_LogCentral(app, "EVNT", "Action 6 starting...");
+                            app.Image.ImageSource = snapshot(app.cam); % Gets a snapshot of the webcam
+
+                            % Drops the sample
+                            wS_Pipette(app, -10, 0.75);
+                            pause(0.25);
+                            wS_Pipette(app, 10, 0.75);
+
+                            app.action = app.action + 1; % app.action++;
+                            app.internalTimer = tic; % Restarts the Internal Timer
+                            
+                        elseif ((app.action == 7) && (toc(app.internalTimer) > 3.000))
+                            % Action 7. Delay of 3.000 seconds
+                            wS_LogCentral(app, "EVNT", "Action 7 starting...");
+                            app.Image.ImageSource = snapshot(app.cam); % Gets a snapshot of the webcam
+
+                            % Raises the lift
+                            wS_Lift(app, 5, 0.50);
+
+                            app.action = app.action + 1; % app.action++;
+                            app.internalTimer = tic; % Restarts the Internal Timer
+
+                        elseif ((app.action == 8) && (toc(app.internalTimer) > 3.000))
+                            % Action 8. Delay of 3.000 seconds
+                            wS_LogCentral(app, "EVNT", "Action 8 starting...");
+                            app.Image.ImageSource = snapshot(app.cam); % Gets a snapshot of the webcam
+
+                            % OCR detection
+                            wS_VisionOCR(app);
+
+                            app.action = app.action + 1; % app.action++;
+                            app.internalTimer = tic; % Restarts the Internal Timer
+
+                        elseif ((app.action == 9) && (toc(app.internalTimer) > 3.000))
+                            % Action 9. Delay of 3.000 seconds
+                            wS_LogCentral(app, "EVNT", "Action 9 starting...");
+                            app.Image.ImageSource = snapshot(app.cam); % Gets a snapshot of the webcam
+
+                            % Pipette distance detection
+                            wS_VisionDistance(app);
+
+                            app.action = app.action + 1; % app.action++;
+                            app.internalTimer = tic; % Restarts the Internal Timer
+                            
                         end
 
-                        app.Image.ImageSource = snapshot(app.cam); % Gets a snapshot of the webcam
                         pause(0.100);
                     end
                 catch exception
