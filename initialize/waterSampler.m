@@ -6,7 +6,7 @@ camList = string(webcamlist); % Creates a list of all valid cameras
 webcamNum = 99; % The webcam index number choosen by the user. Dummy value of 99
 % Loops until the user chooses a valid webcam
 while (webcamNum > length(camList)) || (webcamNum < 0)
-    % These 4 lines are rerun to update the list of webcams
+    % These 4 lines are run multiple times to update the list of webcams
     clear;
     clc;
     camList = string(webcamlist);

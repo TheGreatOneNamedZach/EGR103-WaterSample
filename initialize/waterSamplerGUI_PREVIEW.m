@@ -41,6 +41,7 @@ This script is a preview of "waterSamplerGUI.mlapp"
         stopRequested = false; % When "Stop" is pressed
         wS_State = "Stopped"; % Current state of the Water Sampler
         action = 0; % Current action being executed
+        visionUseRGB = false; % Should we use RGB in place of HSV?
         visionPipette_Detected = false; % Did the vision system detect something?
         visionPipette_Distance = 0; % How far the pipette needs to move
         visionOCR_Detected = false; % Did the vision system detect something?
@@ -105,6 +106,14 @@ This script is a preview of "waterSamplerGUI.mlapp"
             else
                 app.LogsText.Value = [sprintf("(I) %7.3f - [EVNT] Vision system could not calculate a pipette distance. Fall back distance: %.2f", toc(app.internalTimer), app.visionPipette_Distance); app.LogsText.Value];
             end
+
+            wS_LogCentral(app, "INFO", " ");
+            wS_LogCentral(app, "INFO", "------------------------------------");
+            wS_LogCentral(app, "INFO", " ");
+            wS_LogCentral(app, "INFO", "Pipette distance is: " + app.visionPipette_Distance);
+            wS_LogCentral(app, "INFO", " ");
+            wS_LogCentral(app, "INFO", "------------------------------------");
+            wS_LogCentral(app, "INFO", " ");
         end
 
         % The code for the vision sub-system to detect the OCR label
@@ -132,6 +141,14 @@ This script is a preview of "waterSamplerGUI.mlapp"
             else
                 app.LogsText.Value = [sprintf("(I) %7.3f - [EVNT] Vision system could not detect an OCR label. Fall back label is '%s'", toc(app.internalTimer), app.visionOCR_Label); app.LogsText.Value];
             end
+
+            wS_LogCentral(app, "INFO", " ");
+            wS_LogCentral(app, "INFO", "------------------------------------");
+            wS_LogCentral(app, "INFO", " ");
+            wS_LogCentral(app, "INFO", "OCR label is: " + app.visionOCR_Label);
+            wS_LogCentral(app, "INFO", " ");
+            wS_LogCentral(app, "INFO", "------------------------------------");
+            wS_LogCentral(app, "INFO", " ");
         end
         
         % The code for the rotational base sub-system
@@ -323,14 +340,6 @@ This script is a preview of "waterSamplerGUI.mlapp"
                             % OCR detection
                             wS_VisionOCR(app);
 
-                            wS_LogCentral(app, "INFO", " ");
-                            wS_LogCentral(app, "INFO", "------------------------------------");
-                            wS_LogCentral(app, "INFO", " ");
-                            wS_LogCentral(app, "INFO", "OCR label is: " + app.visionOCR_Label);
-                            wS_LogCentral(app, "INFO", " ");
-                            wS_LogCentral(app, "INFO", "------------------------------------");
-                            wS_LogCentral(app, "INFO", " ");
-
                             app.action = app.action + 1; % app.action++;
                             app.internalTimer = tic; % Restarts the Internal Timer
 
@@ -342,19 +351,12 @@ This script is a preview of "waterSamplerGUI.mlapp"
                             % Pipette distance detection
                             wS_VisionDistance(app);
 
-                            wS_LogCentral(app, "INFO", " ");
-                            wS_LogCentral(app, "INFO", "------------------------------------");
-                            wS_LogCentral(app, "INFO", " ");
-                            wS_LogCentral(app, "INFO", "Pipette distance is: " + app.visionPipette_Distance);
-                            wS_LogCentral(app, "INFO", " ");
-                            wS_LogCentral(app, "INFO", "------------------------------------");
-                            wS_LogCentral(app, "INFO", " ");
-
                             app.action = app.action + 1; % app.action++;
                             app.internalTimer = tic; % Restarts the Internal Timer
                             
                         end
 
+                        app.Image.ImageSource = snapshot(app.cam); % Gets a snapshot of the webcam
                         pause(0.100);
                     end
                 catch exception
