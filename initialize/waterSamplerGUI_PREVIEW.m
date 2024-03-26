@@ -44,6 +44,8 @@ This script is a preview of "waterSamplerGUI.mlapp"
         visionUseRGB = false; % Should we use RGB in place of HSV?
         visionPipette_Detected = false; % Did the vision system detect something?
         visionPipette_Distance = 0; % How far the pipette needs to move
+        visionColor_Detected = false; % Did the vision system detect something?
+        visionColor_Hue = 0; % Hue of sample
         visionOCR_Detected = false; % Did the vision system detect something?
         visionOCR_Label = ""; % The OCR label it detected
     end
@@ -111,6 +113,39 @@ This script is a preview of "waterSamplerGUI.mlapp"
             wS_LogCentral(app, "INFO", "------------------------------------");
             wS_LogCentral(app, "INFO", " ");
             wS_LogCentral(app, "INFO", "Pipette distance is: " + app.visionPipette_Distance);
+            wS_LogCentral(app, "INFO", " ");
+            wS_LogCentral(app, "INFO", "------------------------------------");
+            wS_LogCentral(app, "INFO", " ");
+        end
+
+        % The code for the vision sub-system to detect the hue
+        %   of the sample
+        % app - passes in the app object for use of variables
+        % visionColor_Detected - Was anything detected?
+        % visionColor_Hue - What is the distance to travel?
+        function wS_VisionColor(app)
+            % Logs that the vision system started.
+            app.LogsText.Value = [sprintf("(I) %7.3f - [EVNT] Vision system operating. Calculating sample color...", toc(app.internalTimer)); app.LogsText.Value];
+
+            picture = snapshot(app.cam);
+
+            % VISION CODE GOES HERE
+
+
+
+            
+            % Logs if the vision system detected something.
+            % Also logs what the pipette distance will be
+            if(app.visionPipette_Detected)
+                app.LogsText.Value = [sprintf("(I) %7.3f - [EVNT] Vision system calculated a sample color of %.2f", toc(app.internalTimer), app.visionColor_Hue); app.LogsText.Value];
+            else
+                app.LogsText.Value = [sprintf("(I) %7.3f - [EVNT] Vision system could not calculate a sample color. Fall back color: %.2f", toc(app.internalTimer), app.visionColor_Hue); app.LogsText.Value];
+            end
+
+            wS_LogCentral(app, "INFO", " ");
+            wS_LogCentral(app, "INFO", "------------------------------------");
+            wS_LogCentral(app, "INFO", " ");
+            wS_LogCentral(app, "INFO", "Sample color is: " + app.visionColor_Hue);
             wS_LogCentral(app, "INFO", " ");
             wS_LogCentral(app, "INFO", "------------------------------------");
             wS_LogCentral(app, "INFO", " ");
@@ -570,5 +605,5 @@ This script is a preview of "waterSamplerGUI.mlapp"
             % Delete UIFigure when app is deleted
             delete(app.MainMenu)
         end
+        end
     end
-end
