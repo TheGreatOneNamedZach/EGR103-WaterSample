@@ -41,6 +41,7 @@ This script is a preview of "waterSamplerGUI.mlapp"
         stopRequested = false; % When "Stop" is pressed
         wS_State = "Stopped"; % Current state of the Water Sampler
         action = 0; % Current action being executed
+        stepper_stepsPerRev = 2048; % Steps per revolution for stepper
         visionUseRGB = false; % Should we use RGB in place of HSV?
         visionPipette_Detected = false; % Did the vision system detect something?
         visionPipette_Distance = 0; % How far the pipette needs to move
@@ -220,6 +221,33 @@ This script is a preview of "waterSamplerGUI.mlapp"
 
             % LIFT WITH STAND CODE GOES HERE
 
+        end
+
+        % Converts degrees into steps for stepper motor
+        % app - passes in the app object for use of variables
+        % degrees - inputed degrees
+        % steps - outputed steps
+        function steps = stepper_degreesToRev(app, degrees)
+            steps = ((degrees/360) * app.stepper_stepsPerRev);
+        end
+
+        % Converts degrees into steps for the rotational base.
+        % One full rotation is 972 degrees
+        % app - passes in the app object for use of variables
+        % degrees - inputed degrees
+        % steps - outputed steps
+        function steps = wS_RotationalStepper(app, degrees)
+            steps = stepper_degreesToRev(app, ((degrees/360) * 972));
+        end
+
+        % Converts distance into steps for the lift with stand
+        % app - passes in the app object for use of variables
+        % distance - distance input in cm
+        % steps - outputed steps
+        function steps = wS_LiftStepper(app, distance)
+            radius = 2.00; % radius of interior spool in cm
+            circumference = 2 * pi * radius;
+            steps = stepper_degreesToRev(app, ((distance/circumference) * 360));
         end
     end
     
@@ -605,5 +633,5 @@ This script is a preview of "waterSamplerGUI.mlapp"
             % Delete UIFigure when app is deleted
             delete(app.MainMenu)
         end
-        end
     end
+end
