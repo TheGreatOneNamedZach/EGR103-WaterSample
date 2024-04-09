@@ -36,6 +36,10 @@ This script is a preview of "waterSamplerGUI.mlapp"
         ranFromWaterSamplerScript; % Verifies app was run from script
         centralTimer; % Total time lapsed since "Start" pressed
         internalTimer; % Total time lapsed since last action ended
+        outputImage; % Output image for AprilTag detection
+        aTagCenter; % Output center locations for AprilTags
+        aTagSize; % Output AprilTag sizes
+        aTagID; % Output AprilTag ID
 
         % Declare variables here
         stopRequested = false; % When "Stop" is pressed
@@ -185,6 +189,51 @@ This script is a preview of "waterSamplerGUI.mlapp"
             wS_LogCentral(app, "INFO", " ");
             wS_LogCentral(app, "INFO", "------------------------------------");
             wS_LogCentral(app, "INFO", " ");
+        end
+
+        function findAprilTags(app, inputImage, aTagCenterLast, aTagSizeLast)
+            % Finds all AprilTags within the frame
+            [aTag_ID, aTag_loc] = readAprilTag(inputImage, "tag36h11");
+            % aTag_loc
+            % Bottom Left Y, Bottom Left X
+            % Bottom Right Y, Bottom Right X
+            % Top Right Y, Top Right X
+            % Top Left Y, Top Left X
+            
+            if ~isempty(aTag_ID)
+        
+                % https://www.mathworks.com/help/vision/ref/readapriltag.html
+                for i=1 : length(app.aTag_ID)
+                    % Display the ID and tag family
+                    % fprintf("Detected Tag! ID: %.0f\n", aTag_ID(i));
+             
+                    % Insert markers to indicate the corners of the AprilTags
+                    markerRadius = 8;
+                    numCorners = size(aTag_loc,1);
+                    markerPosition = [aTag_loc(:,:,i),repmat(markerRadius,numCorners,1)];
+                    aTag_Img = inputImage;
+                    aTag_Img = insertShape(aTag_Img,"FilledCircle",markerPosition,ShapeColor="red",Opacity=1);
+        
+                    % Finds the center (y, x) coordinate of the AprilTag
+                    app.aTagCenter = [
+                        round(abs((aTag_loc(2,2) - aTag_loc(4,2)) / 2) + aTag_loc(4,2)), ...
+                        round(abs((aTag_loc(2,1) - aTag_loc(4,1)) / 2) + aTag_loc(4,1))];
+                    
+                    % Finds the size of the AprilTag
+                    % The AprilTag can never have a size of 0.
+                    app.aTagSize = [
+                        max(round(abs((aTag_loc(2,2) - aTag_loc(4,2)))),1), ...
+                        max(round(abs((aTag_loc(2,1) - aTag_loc(4,1)))),1)];
+                end
+                app.outputImage = aTag_Img;
+                app.aTagID = aTag_ID(1);
+            else
+                % If no AprilTag is found, it uses the last found values.
+                app.outputImage = inputImage;
+                app.aTagCenter = aTagCenterLast;
+                app.aTagSize = aTagSizeLast;
+                app.aTagID = -1;
+            end
         end
         
         % The code for the rotational base sub-system
