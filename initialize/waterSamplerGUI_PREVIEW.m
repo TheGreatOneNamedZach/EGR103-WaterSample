@@ -203,7 +203,7 @@ This script is a preview of "waterSamplerGUI.mlapp"
             if ~isempty(aTag_ID)
         
                 % https://www.mathworks.com/help/vision/ref/readapriltag.html
-                for i=1 : length(app.aTag_ID)
+                for i=1 : length(aTag_ID)
                     % Display the ID and tag family
                     % fprintf("Detected Tag! ID: %.0f\n", aTag_ID(i));
              
@@ -225,6 +225,7 @@ This script is a preview of "waterSamplerGUI.mlapp"
                         max(round(abs((aTag_loc(2,2) - aTag_loc(4,2)))),1), ...
                         max(round(abs((aTag_loc(2,1) - aTag_loc(4,1)))),1)];
                 end
+                wS_LogCentral(app, "INFO", "Size is: " + app.aTagSize(1) + ", " + app.aTagSize(2));
                 app.outputImage = aTag_Img;
                 app.aTagID = aTag_ID(1);
             else
@@ -369,7 +370,8 @@ This script is a preview of "waterSamplerGUI.mlapp"
                             app.Image.ImageSource = snapshot(app.cam); % Gets a snapshot of the webcam
 
                             % Moves the lift down into a sample
-                            wS_Lift(app, -5, 0.50);
+                            %wS_Lift(app, -5, 0.50);
+                            findAprilTags(app, snapshot(app.cam), app.aTagCenter, app.aTagSize);
 
                             app.action = app.action + 1; % app.action++;
                             app.internalTimer = tic; % Restarts the Internal Timer
