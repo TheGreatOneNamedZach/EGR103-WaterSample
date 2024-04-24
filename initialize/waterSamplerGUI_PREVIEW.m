@@ -40,6 +40,7 @@ This script is a preview of "waterSamplerGUI.mlapp"
         aTagCenter; % Output center locations for AprilTags
         aTagSize; % Output AprilTag sizes
         aTagID; % Output AprilTag ID
+        pipetteServo; % Pipette Servo
 
         % Declare variables here
         stopRequested = false; % When "Stop" is pressed
@@ -61,6 +62,8 @@ This script is a preview of "waterSamplerGUI.mlapp"
         visionColor_Hue = 0; % Hue of sample
         visionOCR_Detected = false; % Did the vision system detect something?
         visionOCR_Label = ""; % The OCR label it detected
+        pipetteServo_pin = 'D3'; % Pin for pipette servo
+        pipetteServo_home = 0.30; % Home position for servo
     end
 
     methods (Access = private)
@@ -84,7 +87,6 @@ This script is a preview of "waterSamplerGUI.mlapp"
         % ERR   -  This means an known ERRor occured. An error log was
         %          output to help diagnose the issue.
         % 
-
 
         % Sends a log to the log GUI area with the Central Timer
         function wS_LogCentral(app, level, message)
@@ -242,6 +244,7 @@ This script is a preview of "waterSamplerGUI.mlapp"
                 app.aTagCenter = aTagCenterLast;
                 app.aTagSize = aTagSizeLast;
                 app.aTagID = -1;
+                wS_LogCentral(app, "INFO", "No AprilTag found. Defaulting to an ID of " + app.aTagID + " with a size of (" + app.aTagSize(1) + ", " + app.aTagSize(2) + ")");
             end
         end
         
@@ -265,8 +268,7 @@ This script is a preview of "waterSamplerGUI.mlapp"
             % Logs that the pipette system was told to move.
             wS_LogAction(app, distance, speed, "Pipette");
 
-            % PIPETTE SQUEEZE CODE GOES HERE
-
+            writePosition(app.pipetteServo, distance);
         end
 
         % The code for the rotational base sub-system
@@ -281,7 +283,6 @@ This script is a preview of "waterSamplerGUI.mlapp"
             circumference = 2 * pi * radius;
             steps = stepper_degreesToRev(app, ((distance/circumference) * 360));
             rotateStepper(app, app.a, steps, speed, app.liftStepper_pin1, app.liftStepper_pin2, app.liftStepper_pin3, app.liftStepper_pin4);
-
         end
 
         % Converts degrees into steps for stepper motor
@@ -290,18 +291,6 @@ This script is a preview of "waterSamplerGUI.mlapp"
         % steps - outputed steps
         function steps = stepper_degreesToRev(app, degrees)
             steps = ((degrees/360) * app.stepper_stepsPerRev);
-        end
-
-        function wS_StepperInit(app)
-            configurePin(app.a, app.rotationalStepper_pin1, 'DigitalOutput');
-            configurePin(app.a, app.rotationalStepper_pin2, 'DigitalOutput');
-            configurePin(app.a, app.rotationalStepper_pin3, 'DigitalOutput');
-            configurePin(app.a, app.rotationalStepper_pin4, 'DigitalOutput');
-
-            configurePin(app.a, app.liftStepper_pin1, 'DigitalOutput');
-            configurePin(app.a, app.liftStepper_pin2, 'DigitalOutput');
-            configurePin(app.a, app.liftStepper_pin3, 'DigitalOutput');
-            configurePin(app.a, app.liftStepper_pin4, 'DigitalOutput');
         end
 
         function rotateStepper(~, arduino, steps, speed, pin1, pin2, pin3, pin4)
@@ -393,7 +382,7 @@ This script is a preview of "waterSamplerGUI.mlapp"
                 % It does this for every variable below...
 
                 app.cam = evalin("base", "cam");
-                %app.a = evalin("base", "a");
+                app.a = evalin("base", "a");
             catch exception
                 % If one of them fails, it logs it in the app
 
@@ -402,14 +391,39 @@ This script is a preview of "waterSamplerGUI.mlapp"
                 rethrow(exception);
             end
 
+            % Configure Stepper pins
+            
             try
 
-                % Configure Stepper pins
-                wS_StepperInit(app);
+                % Rotational base
+                configurePin(app.a, app.rotationalStepper_pin1, 'DigitalOutput');
+                configurePin(app.a, app.rotationalStepper_pin2, 'DigitalOutput');
+                configurePin(app.a, app.rotationalStepper_pin3, 'DigitalOutput');
+                configurePin(app.a, app.rotationalStepper_pin4, 'DigitalOutput');
+    
+                % Lift with Stand
+                %{
+                configurePin(app.a, app.liftStepper_pin1, 'DigitalOutput');
+                configurePin(app.a, app.liftStepper_pin2, 'DigitalOutput');
+                configurePin(app.a, app.liftStepper_pin3, 'DigitalOutput');
+                configurePin(app.a, app.liftStepper_pin4, 'DigitalOutput');
+                %}
             catch exception
 
                 app.LogsText.FontColor = [1.00, 0.00, 0.00];
-                wS_LogCentral(app, "ERR", "Failed to configure Stepper pins. (Have they switched Arduino boards?)");
+                wS_LogCentral(app, "ERR", "Failed to configure Stepper pins. (Are they plugged in?)");
+                rethrow(exception);
+            end
+            
+            % Trys to initalize the servos
+            try
+
+                app.pipetteServo = servo(app.a, app.pipetteServo_pin, 'MinPulseDuration', 700*10^-6, 'MaxPulseDuration', 2300*10^-6);
+                writePosition(app.pipetteServo, app.pipetteServo_home);
+            catch exception
+
+                app.LogsText.FontColor = [1.00, 0.00, 0.00];
+                wS_LogCentral(app, "ERR", "Failed to initialize a servo. (Are they plugged in?)");
                 rethrow(exception);
             end
 
@@ -438,6 +452,21 @@ This script is a preview of "waterSamplerGUI.mlapp"
                 % Tries to run the while loop
                 try
                     while ((~app.stopRequested) && (~app.MainMenu.BeingDeleted) && ((toc(app.centralTimer)) < 300) && (app.action < 100))
+                        if (app.action == 1)
+                            wS_LogCentral(app, "EVNT", "Action 1 starting...");
+                            app.Image.ImageSource = snapshot(app.cam);
+
+                            wS_Pipette(app, 0.00, 1.00); % Pulls out all the way
+                            pause(1000)
+                            wS_Pipette(app, 0.9, 1.00);
+                            pause(2.000);
+                            wS_Pipette(app, 0.3, app.pipetteServo_home);
+
+                            app.action = app.action + 1; % app.action++;
+                            app.internalTimer = tic; % Restarts the Internal Timer
+                        end
+
+                        %{
                         if (app.action == 1)
                             % Action 1. Delay of 0.000 seconds
                             wS_LogCentral(app, "EVNT", "Action 1 starting...");
@@ -543,6 +572,7 @@ This script is a preview of "waterSamplerGUI.mlapp"
                             app.internalTimer = tic; % Restarts the Internal Timer
                             
                         end
+                        %}
 
                         app.Image.ImageSource = snapshot(app.cam); % Gets a snapshot of the webcam
                         pause(0.100);
@@ -580,6 +610,7 @@ This script is a preview of "waterSamplerGUI.mlapp"
                 delete(app.cam); % Closes the webcam (turns off the camera)
     
                 % Returns motors to home
+                writePosition(app.pipetteServo, app.pipetteServo_home);
 
                 wS_LogCentral(app, "EVNT", "Stopping app...");
                 pause(3.000);
@@ -759,4 +790,5 @@ This script is a preview of "waterSamplerGUI.mlapp"
             delete(app.MainMenu)
         end
     end
-end
+    end
+    
