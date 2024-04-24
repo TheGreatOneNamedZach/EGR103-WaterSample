@@ -1,14 +1,15 @@
 clear; % Clears all variables from current workspace
 clc; % Clears all text from the command line window
 
+%{
 clear s;
 s = serialport('COM3', 9600);
 pause(2);
 
 dist = 420;
 write(s, int2str(dist), 'string');
+%}
 
-%{
 a = arduino(); % Constructs Arduino
 
 stepsPerRevolution = 2048; % Steps per revolution of stepper motor
@@ -27,4 +28,4 @@ MoveCounterClockWise(thisStepper, 100, stepsPerRevolution / 4); % Moves stepper 
 fprintf("Finished moving counterclockwise in %.3f seconds.\n", toc);
 
 disp('Program is done.');
-%}
+

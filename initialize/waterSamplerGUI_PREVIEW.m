@@ -46,6 +46,14 @@ This script is a preview of "waterSamplerGUI.mlapp"
         wS_State = "Stopped"; % Current state of the Water Sampler
         action = 0; % Current action being executed
         stepper_stepsPerRev = 2048; % Steps per revolution for stepper
+        rotationalStepper_pin1 = 'D8';
+        rotationalStepper_pin2 = 'D9';
+        rotationalStepper_pin3 = 'D10';
+        rotationalStepper_pin4 = 'D11';
+        liftStepper_pin1 = '';
+        liftStepper_pin2 = '';
+        liftStepper_pin3 = '';
+        liftStepper_pin4 = '';
         visionUseRGB = false; % Should we use RGB in place of HSV?
         visionPipette_Detected = false; % Did the vision system detect something?
         visionPipette_Distance = 0; % How far the pipette needs to move
@@ -245,8 +253,8 @@ This script is a preview of "waterSamplerGUI.mlapp"
             % Logs that the rotational base system was told to move.
             wS_LogAction(app, distance, speed, "Rotational");
 
-            % ROTATIONAL BASE CODE GOES HERE
-
+            steps = stepper_degreesToRev(app, ((degrees/360) * 972));
+            rotateStepper(app, app.a, steps, speed, app.rotationalStepper_pin1, app.rotationalStepper_pin2, app.rotationalStepper_pin3, app.rotationalStepper_pin4);
         end
 
         % The code for the pipette sub-system
@@ -269,7 +277,10 @@ This script is a preview of "waterSamplerGUI.mlapp"
             % Logs that the lift system was told to move.
             wS_LogAction(app, distance, speed, "Lift");
 
-            % LIFT WITH STAND CODE GOES HERE
+            radius = 2.00; % radius of interior spool in cm
+            circumference = 2 * pi * radius;
+            steps = stepper_degreesToRev(app, ((distance/circumference) * 360));
+            rotateStepper(app, app.a, steps, speed, app.liftStepper_pin1, app.liftStepper_pin2, app.liftStepper_pin3, app.liftStepper_pin4);
 
         end
 
@@ -281,23 +292,74 @@ This script is a preview of "waterSamplerGUI.mlapp"
             steps = ((degrees/360) * app.stepper_stepsPerRev);
         end
 
-        % Converts degrees into steps for the rotational base.
-        % One full rotation is 972 degrees
-        % app - passes in the app object for use of variables
-        % degrees - inputed degrees
-        % steps - outputed steps
-        function steps = wS_RotationalStepper(app, degrees)
-            steps = stepper_degreesToRev(app, ((degrees/360) * 972));
+        function wS_StepperInit(app)
+            configurePin(app.a, app.rotationalStepper_pin1, 'DigitalOutput');
+            configurePin(app.a, app.rotationalStepper_pin2, 'DigitalOutput');
+            configurePin(app.a, app.rotationalStepper_pin3, 'DigitalOutput');
+            configurePin(app.a, app.rotationalStepper_pin4, 'DigitalOutput');
+
+            configurePin(app.a, app.liftStepper_pin1, 'DigitalOutput');
+            configurePin(app.a, app.liftStepper_pin2, 'DigitalOutput');
+            configurePin(app.a, app.liftStepper_pin3, 'DigitalOutput');
+            configurePin(app.a, app.liftStepper_pin4, 'DigitalOutput');
         end
 
-        % Converts distance into steps for the lift with stand
-        % app - passes in the app object for use of variables
-        % distance - distance input in cm
-        % steps - outputed steps
-        function steps = wS_LiftStepper(app, distance)
-            radius = 2.00; % radius of interior spool in cm
-            circumference = 2 * pi * radius;
-            steps = stepper_degreesToRev(app, ((distance/circumference) * 360));
+        function rotateStepper(~, arduino, steps, speed, pin1, pin2, pin3, pin4)
+            if(steps~=0)
+
+                % Compute the speed - This is 'adjusted' to accomodate lag
+                StepsPerSecond = (1/4) * steps * speed;
+                %Invert it
+                SecondsPerStep = 1/StepsPerSecond;
+
+                % Ensure all outputs are off
+                writeDigitalPin(arduino, pin1, 0);
+                writeDigitalPin(arduino, pin2, 0);
+                writeDigitalPin(arduino, pin3, 0);
+                writeDigitalPin(arduino, pin4, 0);
+
+                if (steps > 0)
+                    % Clockwise
+
+                    for index = 1:(steps/4)
+                        writeDigitalPin(arduino, pin1, 1);
+                        writeDigitalPin(arduino, pin4, 0);
+                        pause(SecondsPerStep/4);
+                        writeDigitalPin(arduino, pin1, 0);
+                        writeDigitalPin(arduino, pin2, 1);
+                        pause(SecondsPerStep/4);
+                        writeDigitalPin(arduino, pin2, 0);
+                        writeDigitalPin(arduino, pin3, 1);
+                        pause(SecondsPerStep/4);
+                        writeDigitalPin(arduino, pin3, 0);
+                        writeDigitalPin(arduino, pin4, 1);
+                        pause(SecondsPerStep/4);
+                    end
+                else
+                    % Counterclockwise
+
+                    for index = 1:(steps/4)
+                        writeDigitalPin(arduino, pin1, 0);
+                        writeDigitalPin(arduino, pin4, 1);
+                        pause(SecondsPerStep/4);
+                        writeDigitalPin(arduino, pin3, 1);
+                        writeDigitalPin(arduino, pin4, 0);
+                        pause(SecondsPerStep/4);
+                        writeDigitalPin(arduino, pin2, 1);
+                        writeDigitalPin(arduino, pin3, 0);
+                        pause(SecondsPerStep/4);
+                        writeDigitalPin(arduino, pin1, 1);
+                        writeDigitalPin(arduino, pin2, 0);
+                        pause(SecondsPerStep/4);
+                    end
+                end
+
+                % Leave all the motor coils de-energized when finished
+                writeDigitalPin(arduino, pin1, 0);
+                writeDigitalPin(arduino, pin2, 0);
+                writeDigitalPin(arduino, pin3, 0);
+                writeDigitalPin(arduino, pin4, 0); 
+            end
         end
     end
     
@@ -329,13 +391,25 @@ This script is a preview of "waterSamplerGUI.mlapp"
                 % Evaluates the value of the variable called "cam" in the workspace.
                 % Then, assigns that value to app.cam
                 % It does this for every variable below...
+
                 app.cam = evalin("base", "cam");
                 %app.a = evalin("base", "a");
-
             catch exception
                 % If one of them fails, it logs it in the app
+
                 app.LogsText.FontColor = [1.00, 0.00, 0.00];
                 wS_LogCentral(app, "ERR", "Failed to evaluate one or more variables from Workshop. (Do they exist before evaluation?)");
+                rethrow(exception);
+            end
+
+            try
+
+                % Configure Stepper pins
+                wS_StepperInit(app);
+            catch exception
+
+                app.LogsText.FontColor = [1.00, 0.00, 0.00];
+                wS_LogCentral(app, "ERR", "Failed to configure Stepper pins. (Have they switched Arduino boards?)");
                 rethrow(exception);
             end
 
@@ -395,7 +469,7 @@ This script is a preview of "waterSamplerGUI.mlapp"
                             app.Image.ImageSource = snapshot(app.cam); % Gets a snapshot of the webcam
 
                             % Moves the lift back up
-                            wS_Lift(app, 5, 0.50);
+                            wS_Lift(app, 5, 1.00);
 
                             app.action = app.action + 1; % app.action++;
                             app.internalTimer = tic; % Restarts the Internal Timer
