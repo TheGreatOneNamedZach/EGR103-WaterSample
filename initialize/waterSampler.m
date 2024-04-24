@@ -1,5 +1,7 @@
 % The primary parent script for the water sample project.
 close all;
+clear all;
+clc;
 
 camList = string(webcamlist); % Creates a list of all valid cameras
 

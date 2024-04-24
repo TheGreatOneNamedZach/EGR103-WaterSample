@@ -47,10 +47,11 @@ This script is a preview of "waterSamplerGUI.mlapp"
         wS_State = "Stopped"; % Current state of the Water Sampler
         action = 0; % Current action being executed
         stepper_stepsPerRev = 2048; % Steps per revolution for stepper
-        rotationalStepper_pin1 = 'D8';
-        rotationalStepper_pin2 = 'D9';
-        rotationalStepper_pin3 = 'D10';
-        rotationalStepper_pin4 = 'D11';
+        rotationalStepper_pin1 = 'D7';
+        rotationalStepper_pin2 = 'D8';
+        rotationalStepper_pin3 = 'D12';
+        rotationalStepper_pin4 = 'D13';
+        rotationalTravel = 0; % Distance traveled from home
         liftStepper_pin1 = '';
         liftStepper_pin2 = '';
         liftStepper_pin3 = '';
@@ -62,7 +63,7 @@ This script is a preview of "waterSamplerGUI.mlapp"
         visionColor_Hue = 0; % Hue of sample
         visionOCR_Detected = false; % Did the vision system detect something?
         visionOCR_Label = ""; % The OCR label it detected
-        pipetteServo_pin = 'D3'; % Pin for pipette servo
+        pipetteServo_pin = 'D2'; % Pin for pipette servo
         pipetteServo_home = 0.30; % Home position for servo
     end
 
@@ -109,12 +110,95 @@ This script is a preview of "waterSamplerGUI.mlapp"
             % Logs that the vision system started.
             app.LogsText.Value = [sprintf("(I) %7.3f - [EVNT] Vision system operating. Calculating pipette distance...", toc(app.internalTimer)); app.LogsText.Value];
 
-            picture = snapshot(app.cam);
-
+            app.Image.ImageSource = snapshot (app.cam);
             % VISION CODE GOES HERE
-
-
-
+            %inch to cm ratio
+            inch_to_cm = 2.54;
+            pixels= 0;
+            
+            %position of the waste and the pipe
+            waste_position = 0;
+            pipe_position = 0;
+            
+            
+            %One pixel to cm
+            pixel_to_distance = 2.54 / app.aTagSize(2);
+            app.visionUseRGB = false;
+            detected_pipe = false; 
+            detected_waste = false;
+            app.visionPipette_Detected = false;
+            
+            %image to process
+            %image = imread(img);
+            imtool(app.Image.ImageSource);
+            
+            %read text in the image
+            ocrResults = ocr(app.Image.ImageSource);
+            app.visionOCR_Label = ocrResults.Text;   
+            
+            
+            %
+            if(app.visionUseRGB)
+                waste_threshholdn_value = 20;
+                pipe_threshholdn_value = 250;
+            
+                red_color=app.Image.ImageSource(:,:,1);
+                green_color=app.Image.ImageSource(:,:,2);
+                blue_color=app.Image.ImageSource(:,:,3);
+                red_blue_diff = double(red_color)-double(blue_color);
+                red_green_diff = double(red_color)-double(green_color);
+                blue_green_diff = double(blue_color)-double(green_color);
+                red_blue_ratio = double(red_color)/double(blue_color);
+                red_green_rato = double(red_color)/double(green_color);
+                blue_green_ratio = double(blue_color)/double(green_color);
+                
+                waste= (red_color <= waste_threshholdn_value);
+                pipe = (green_color >= pipe_threshholdn_value);
+            else
+                waste_threshholdn_value = 0.5;
+                
+                %initialize all value
+                imgHSV_arr = rgb2hsv(app.Image.ImageSource);
+                imgHSV_color =  imgHSV_arr(:,:,1);
+                imgHSV_brightness = imgHSV_arr(:,:,3);
+            
+                %check the waste using brightness value
+                waste= (imgHSV_brightness <= waste_threshholdn_value);
+                %check the pipe using color value
+                pipe = (imgHSV_color <= (160/355)& imgHSV_color >= (70/355));
+            end
+            
+            
+            % find and locate the waste
+            waste_bw = bwareaopen(waste,1000); 
+            imshow(waste_bw);
+            Bounding_Boxes1 = regionprops('table',waste_bw, 'BoundingBox'); 
+            Bounding_Boxes1 = Bounding_Boxes1{:,:}; 
+            figure, imshow(app.Image.ImageSource);
+            
+            %if waste detecteed
+            for k = 1:size(Bounding_Boxes1,1) 
+                detected_waste = true;
+            end
+            
+            % find and locate the pipe
+            pipe_bw = bwareaopen(pipe,1000); 
+            imshow(pipe_bw);
+            Bounding_Boxes2 = regionprops('table',pipe_bw, 'BoundingBox'); 
+            Bounding_Boxes2 = Bounding_Boxes2{:,:}; 
+            figure, imshow(app.Image.ImageSource);
+            
+            %if pipe detected 
+            for k = 1:size(Bounding_Boxes2,1) 
+                detected_pipe = true;
+            end
+            
+            
+            %check if anything is detected
+            if(detected_pipe && detected_waste)
+                app.visionPipette_Detected = true;
+                app.visionPipette_Distance = pixel_to_distance * (Bounding_Boxes1(2)  - (Bounding_Boxes2(2)+ Bounding_Boxes2(4)));
+            end
             
             % Logs if the vision system detected something.
             % Also logs what the pipette distance will be
@@ -250,14 +334,15 @@ This script is a preview of "waterSamplerGUI.mlapp"
         
         % The code for the rotational base sub-system
         % app - passes in the app object for use of variables
-        % distance - the distance to rotate clockwise
+        % distance - the distance to rotate clockwise IN DEGREES
         % speed - the speed at which to travel (1.00 = 100% power)
         function wS_Rotational(app, distance, speed)
             % Logs that the rotational base system was told to move.
             wS_LogAction(app, distance, speed, "Rotational");
 
-            steps = stepper_degreesToRev(app, ((degrees/360) * 972));
+            steps = stepper_degreesToRev(app, ((distance/360) * 972));
             rotateStepper(app, app.a, steps, speed, app.rotationalStepper_pin1, app.rotationalStepper_pin2, app.rotationalStepper_pin3, app.rotationalStepper_pin4);
+            app.rotationalTravel = app.rotationalTravel + distance; % Distance traveled
         end
 
         % The code for the pipette sub-system
@@ -326,6 +411,7 @@ This script is a preview of "waterSamplerGUI.mlapp"
                     end
                 else
                     % Counterclockwise
+                    steps = abs(steps);
 
                     for index = 1:(steps/4)
                         writeDigitalPin(arduino, pin1, 0);
@@ -456,12 +542,35 @@ This script is a preview of "waterSamplerGUI.mlapp"
                             wS_LogCentral(app, "EVNT", "Action 1 starting...");
                             app.Image.ImageSource = snapshot(app.cam);
 
-                            wS_Pipette(app, 0.00, 1.00); % Pulls out all the way
-                            pause(1000)
-                            wS_Pipette(app, 0.9, 1.00);
-                            pause(2.000);
-                            wS_Pipette(app, 0.3, app.pipetteServo_home);
+                            %wS_Pipette(app, 0.0, 1.00);
+                            findAprilTags(app, app.Image.ImageSource, app.aTagCenter, app.aTagSize);
+                            pause(1.000);
+                            wS_VisionDistance(app);
 
+                            app.action = app.action + 1; % app.action++;
+                            app.internalTimer = tic; % Restarts the Internal Timer
+                        elseif ((app.action == 2) && (toc(app.internalTimer) > 1.000))
+                            wS_LogCentral(app, "EVNT", "Action 2 starting...");
+                            app.Image.ImageSource = snapshot(app.cam);
+
+                            wS_Pipette(app, 0.9, 1.00);
+
+                            app.action = app.action + 1; % app.action++;
+                            app.internalTimer = tic; % Restarts the Internal Timer
+                        elseif ((app.action == 3) && (toc(app.internalTimer) > 3.000))
+                            wS_LogCentral(app, "EVNT", "Action 3 starting...");
+                            app.Image.ImageSource = snapshot(app.cam);
+    
+                            wS_Pipette(app, 0.3, 1.00);
+    
+                            app.action = app.action + 1; % app.action++;
+                            app.internalTimer = tic; % Restarts the Internal Timer
+                        elseif ((app.action == 4) && (toc(app.internalTimer) > 3.000))
+                            wS_LogCentral(app, "EVNT", "Action 4 starting...");
+                            app.Image.ImageSource = snapshot(app.cam);
+    
+                            wS_Rotational(app, -45, 1.00);
+    
                             app.action = app.action + 1; % app.action++;
                             app.internalTimer = tic; % Restarts the Internal Timer
                         end
@@ -610,7 +719,9 @@ This script is a preview of "waterSamplerGUI.mlapp"
                 delete(app.cam); % Closes the webcam (turns off the camera)
     
                 % Returns motors to home
+                wS_LogCentral(app, "EVNT", "Moving motors home...");
                 writePosition(app.pipetteServo, app.pipetteServo_home);
+                wS_Rotational(app, (app.rotationalTravel * -1), 1.00);
 
                 wS_LogCentral(app, "EVNT", "Stopping app...");
                 pause(3.000);
@@ -790,5 +901,4 @@ This script is a preview of "waterSamplerGUI.mlapp"
             delete(app.MainMenu)
         end
     end
-    end
-    
+end
