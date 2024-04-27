@@ -32,6 +32,7 @@ This script is a preview of "waterSamplerGUI.mlapp"
     properties (Access = public)
         % Declare null variables here
         a; % Will eventually construct the Arduino
+        a2;
         cam; % Will eventually construct the webcam
         ranFromWaterSamplerScript; % Verifies app was run from script
         centralTimer; % Total time lapsed since "Start" pressed
@@ -47,15 +48,16 @@ This script is a preview of "waterSamplerGUI.mlapp"
         wS_State = "Stopped"; % Current state of the Water Sampler
         action = 0; % Current action being executed
         stepper_stepsPerRev = 2048; % Steps per revolution for stepper
-        rotationalStepper_pin1 = 'D7';
-        rotationalStepper_pin2 = 'D8';
-        rotationalStepper_pin3 = 'D12';
-        rotationalStepper_pin4 = 'D13';
         rotationalTravel = 0; % Distance traveled from home
-        liftStepper_pin1 = '';
-        liftStepper_pin2 = '';
-        liftStepper_pin3 = '';
-        liftStepper_pin4 = '';
+        rotationalStepper_pin1 = 'D8';
+        rotationalStepper_pin2 = 'D9';
+        rotationalStepper_pin3 = 'D10';
+        rotationalStepper_pin4 = 'D11';
+        pipetteServo_pin = 'D2'; % Pin for pipette servo
+        liftStepper_pin1 = 'D7';
+        liftStepper_pin2 = 'D8';
+        liftStepper_pin3 = 'D12';
+        liftStepper_pin4 = 'D13';
         visionUseRGB = false; % Should we use RGB in place of HSV?
         visionPipette_Detected = false; % Did the vision system detect something?
         visionPipette_Distance = 0; % How far the pipette needs to move
@@ -63,7 +65,6 @@ This script is a preview of "waterSamplerGUI.mlapp"
         visionColor_Hue = 0; % Hue of sample
         visionOCR_Detected = false; % Did the vision system detect something?
         visionOCR_Label = ""; % The OCR label it detected
-        pipetteServo_pin = 'D2'; % Pin for pipette servo
         pipetteServo_home = 0.30; % Home position for servo
     end
 
@@ -130,12 +131,7 @@ This script is a preview of "waterSamplerGUI.mlapp"
             
             %image to process
             %image = imread(img);
-            imtool(app.Image.ImageSource);
-            
-            %read text in the image
-            ocrResults = ocr(app.Image.ImageSource);
-            app.visionOCR_Label = ocrResults.Text;   
-            
+            %imtool(app.Image.ImageSource);
             
             %
             if(app.visionUseRGB)
@@ -171,10 +167,11 @@ This script is a preview of "waterSamplerGUI.mlapp"
             
             % find and locate the waste
             waste_bw = bwareaopen(waste,1000); 
-            imshow(waste_bw);
+            %imshow(waste_bw);
+            %app.Image.ImageSource = repmat(waste_bw, [1, 1, 3]);
             Bounding_Boxes1 = regionprops('table',waste_bw, 'BoundingBox'); 
             Bounding_Boxes1 = Bounding_Boxes1{:,:}; 
-            figure, imshow(app.Image.ImageSource);
+            %figure, imshow(app.Image.ImageSource);
             
             %if waste detecteed
             for k = 1:size(Bounding_Boxes1,1) 
@@ -183,10 +180,11 @@ This script is a preview of "waterSamplerGUI.mlapp"
             
             % find and locate the pipe
             pipe_bw = bwareaopen(pipe,1000); 
-            imshow(pipe_bw);
+            %imshow(pipe_bw);
+            %app.Image.ImageSource = repmat(pipe_bw, [1, 1, 3]);
             Bounding_Boxes2 = regionprops('table',pipe_bw, 'BoundingBox'); 
             Bounding_Boxes2 = Bounding_Boxes2{:,:}; 
-            figure, imshow(app.Image.ImageSource);
+            %figure, imshow(app.Image.ImageSource);
             
             %if pipe detected 
             for k = 1:size(Bounding_Boxes2,1) 
@@ -261,6 +259,10 @@ This script is a preview of "waterSamplerGUI.mlapp"
             picture = snapshot(app.cam);
             
             % VISION CODE GOES HERE
+
+            %read text in the image
+            ocrResults = ocr(app.Image.ImageSource);
+            app.visionOCR_Label = ocrResults.Text;
 
             % TODO: If no label is detected, DO NOT return a label.
             %   This is so we can use the last label detected (if any).
@@ -341,7 +343,7 @@ This script is a preview of "waterSamplerGUI.mlapp"
             wS_LogAction(app, distance, speed, "Rotational");
 
             steps = stepper_degreesToRev(app, ((distance/360) * 972));
-            rotateStepper(app, app.a, steps, speed, app.rotationalStepper_pin1, app.rotationalStepper_pin2, app.rotationalStepper_pin3, app.rotationalStepper_pin4);
+            rotateStepper(app, app.a2, steps, speed, app.rotationalStepper_pin1, app.rotationalStepper_pin2, app.rotationalStepper_pin3, app.rotationalStepper_pin4);
             app.rotationalTravel = app.rotationalTravel + distance; % Distance traveled
         end
 
@@ -396,6 +398,9 @@ This script is a preview of "waterSamplerGUI.mlapp"
                     % Clockwise
 
                     for index = 1:(steps/4)
+                        if (app.wS_State == "SCRAM")
+                            return;
+                        end
                         writeDigitalPin(arduino, pin1, 1);
                         writeDigitalPin(arduino, pin4, 0);
                         pause(SecondsPerStep/4);
@@ -414,6 +419,9 @@ This script is a preview of "waterSamplerGUI.mlapp"
                     steps = abs(steps);
 
                     for index = 1:(steps/4)
+                        if (app.wS_State == "SCRAM")
+                            return;
+                        end
                         writeDigitalPin(arduino, pin1, 0);
                         writeDigitalPin(arduino, pin4, 1);
                         pause(SecondsPerStep/4);
@@ -469,6 +477,7 @@ This script is a preview of "waterSamplerGUI.mlapp"
 
                 app.cam = evalin("base", "cam");
                 app.a = evalin("base", "a");
+                app.a2 = evalin("base", "a2");
             catch exception
                 % If one of them fails, it logs it in the app
 
@@ -544,8 +553,6 @@ This script is a preview of "waterSamplerGUI.mlapp"
 
                             %wS_Pipette(app, 0.0, 1.00);
                             findAprilTags(app, app.Image.ImageSource, app.aTagCenter, app.aTagSize);
-                            pause(1.000);
-                            wS_VisionDistance(app);
 
                             app.action = app.action + 1; % app.action++;
                             app.internalTimer = tic; % Restarts the Internal Timer
@@ -569,8 +576,24 @@ This script is a preview of "waterSamplerGUI.mlapp"
                             wS_LogCentral(app, "EVNT", "Action 4 starting...");
                             app.Image.ImageSource = snapshot(app.cam);
     
-                            wS_Rotational(app, -45, 1.00);
+                            wS_Rotational(app, 45, 1.00);
     
+                            app.action = app.action + 1; % app.action++;
+                            app.internalTimer = tic; % Restarts the Internal Timer
+                        elseif ((app.action == 5) && (toc(app.internalTimer) > 3.000))
+                            wS_LogCentral(app, "EVNT", "Action 5 starting...");
+                            app.Image.ImageSource = snapshot(app.cam);
+    
+                            wS_VisionDistance(app);
+    
+                            app.action = app.action + 1; % app.action++;
+                            app.internalTimer = tic; % Restarts the Internal Timer
+                        elseif ((app.action == 6) && (toc(app.internalTimer) > 3.000))
+                            wS_LogCentral(app, "EVNT", "Action 6 starting...");
+                            app.Image.ImageSource = snapshot(app.cam);
+
+                            wS_Lift(app, 4, 1.00);
+
                             app.action = app.action + 1; % app.action++;
                             app.internalTimer = tic; % Restarts the Internal Timer
                         end
