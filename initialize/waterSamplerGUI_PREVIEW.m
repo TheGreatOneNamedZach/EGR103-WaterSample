@@ -33,6 +33,7 @@ This script is a preview of "waterSamplerGUI.mlapp"
         % Declare null variables here
         a; % Will eventually construct the Arduino
         a2;
+        s;
         cam; % Will eventually construct the webcam
         ranFromWaterSamplerScript; % Verifies app was run from script
         centralTimer; % Total time lapsed since "Start" pressed
@@ -330,7 +331,11 @@ This script is a preview of "waterSamplerGUI.mlapp"
                 app.aTagCenter = aTagCenterLast;
                 app.aTagSize = aTagSizeLast;
                 app.aTagID = -1;
-                wS_LogCentral(app, "INFO", "No AprilTag found. Defaulting to an ID of " + app.aTagID + " with a size of (" + app.aTagSize(1) + ", " + app.aTagSize(2) + ")");
+                try
+                    wS_LogCentral(app, "INFO", "No AprilTag found. Defaulting to an ID of " + app.aTagID + " with a size of (" + app.aTagSize(1) + ", " + app.aTagSize(2) + ")");
+                catch ignored
+                    wS_LogCentral(app, "INFO", "No AprilTag found. Values possibly null.");
+                end
             end
         end
         
@@ -343,7 +348,8 @@ This script is a preview of "waterSamplerGUI.mlapp"
             wS_LogAction(app, distance, speed, "Rotational");
 
             steps = stepper_degreesToRev(app, ((distance/360) * 972));
-            rotateStepper(app, app.a2, steps, speed, app.rotationalStepper_pin1, app.rotationalStepper_pin2, app.rotationalStepper_pin3, app.rotationalStepper_pin4);
+            %rotateStepper(app, app.a2, steps, speed, app.rotationalStepper_pin1, app.rotationalStepper_pin2, app.rotationalStepper_pin3, app.rotationalStepper_pin4);
+            write(app.s, int2str(steps), 'string');
             app.rotationalTravel = app.rotationalTravel + distance; % Distance traveled
         end
 
@@ -380,7 +386,7 @@ This script is a preview of "waterSamplerGUI.mlapp"
             steps = ((degrees/360) * app.stepper_stepsPerRev);
         end
 
-        function rotateStepper(~, arduino, steps, speed, pin1, pin2, pin3, pin4)
+        function rotateStepper(app, arduino, steps, speed, pin1, pin2, pin3, pin4)
             if(steps~=0)
 
                 % Compute the speed - This is 'adjusted' to accomodate lag
@@ -477,7 +483,8 @@ This script is a preview of "waterSamplerGUI.mlapp"
 
                 app.cam = evalin("base", "cam");
                 app.a = evalin("base", "a");
-                app.a2 = evalin("base", "a2");
+                %app.a2 = evalin("base", "a2");
+                app.s = evalin("base", "s");
             catch exception
                 % If one of them fails, it logs it in the app
 
@@ -491,18 +498,18 @@ This script is a preview of "waterSamplerGUI.mlapp"
             try
 
                 % Rotational base
+                %{
                 configurePin(app.a, app.rotationalStepper_pin1, 'DigitalOutput');
                 configurePin(app.a, app.rotationalStepper_pin2, 'DigitalOutput');
                 configurePin(app.a, app.rotationalStepper_pin3, 'DigitalOutput');
                 configurePin(app.a, app.rotationalStepper_pin4, 'DigitalOutput');
+                %}
     
                 % Lift with Stand
-                %{
                 configurePin(app.a, app.liftStepper_pin1, 'DigitalOutput');
                 configurePin(app.a, app.liftStepper_pin2, 'DigitalOutput');
                 configurePin(app.a, app.liftStepper_pin3, 'DigitalOutput');
                 configurePin(app.a, app.liftStepper_pin4, 'DigitalOutput');
-                %}
             catch exception
 
                 app.LogsText.FontColor = [1.00, 0.00, 0.00];
@@ -512,7 +519,6 @@ This script is a preview of "waterSamplerGUI.mlapp"
             
             % Trys to initalize the servos
             try
-
                 app.pipetteServo = servo(app.a, app.pipetteServo_pin, 'MinPulseDuration', 700*10^-6, 'MaxPulseDuration', 2300*10^-6);
                 writePosition(app.pipetteServo, app.pipetteServo_home);
             catch exception

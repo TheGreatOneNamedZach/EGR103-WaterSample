@@ -26,8 +26,9 @@ end
 
 cam = webcam(camList(webcamNum)); % Constructs a webcam object
 
-a = arduino('COM4', 'Uno'); % Initializes the Arduino
-a2 = arduino('COM3', 'Uno');
+a = arduino('COM5'); % Initializes the Arduino
+%a2 = arduino('COM3', 'Uno');
+s = serialport('COM3', 9600);
 
 ranFromWaterSamplerScript = true; % Verifies app was ran from script
 
