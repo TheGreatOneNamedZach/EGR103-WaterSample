@@ -63,6 +63,7 @@ This script is a preview of "waterSamplerGUI.mlapp"
         visionUseRGB = true; % Should we use RGB in place of HSV?
         visionPipette_Detected = false; % Did the vision system detect something?
         visionPipette_Distance = 0; % How far the pipette needs to move
+        visionPipette_BBLocation = -1;
         visionColor_Detected = false; % Did the vision system detect something?
         visionColor_Hue = 0; % Hue of sample
         visionOCR_Detected = false; % Did the vision system detect something?
@@ -230,12 +231,14 @@ This script is a preview of "waterSamplerGUI.mlapp"
             % Logs that the vision system started.
             app.LogsText.Value = [sprintf("(I) %7.3f - [EVNT] Vision system operating. Calculating sample color...", toc(app.internalTimer)); app.LogsText.Value];
 
-            picture = snapshot(app.cam);
+            app.Image.ImageSource = snapshot(app.cam);
 
             % VISION CODE GOES HERE
 
+            red_color=app.Image.ImageSource(:,:,1);
 
-
+            app.visionColor_Hue = red_color(app.visionPipette_BBLocation(1)-25, app.visionPipette_BBLocation(2)+25);
+            app.visionColor_Detected = true;
             
             % Logs if the vision system detected something.
             % Also logs what the pipette distance will be
