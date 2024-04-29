@@ -87,6 +87,9 @@ This script is a preview of "waterSamplerGUI.mlapp"
         % 
         % INFO  -  This means INFOrmation was output by the water sampler.
         %          This is usually required (by the assignment) to be output.
+        %
+        % WARN  -  This means the water sampler wants to WARN the user.
+        %          Usually, suspicious information warrents a warning.
         % 
         % ERR   -  This means an known ERRor occured. An error log was
         %          output to help diagnose the issue.
@@ -570,7 +573,7 @@ This script is a preview of "waterSamplerGUI.mlapp"
                 try
                     while ((~app.stopRequested) && (~app.MainMenu.BeingDeleted) && ((toc(app.centralTimer)) < 300) && (app.action < 100))
                         if (app.action == 1)
-                            wS_LogCentral(app, "EVNT", "Action 1 starting...");
+                            wS_LogCentral(app, "EVNT", "Action " + app.action + " starting...");
                             app.Image.ImageSource = snapshot(app.cam);
 
                             findAprilTags(app, app.Image.ImageSource, app.aTagCenter, app.aTagSize);
@@ -578,156 +581,94 @@ This script is a preview of "waterSamplerGUI.mlapp"
                             app.action = app.action + 1; % app.action++;
                             app.internalTimer = tic; % Restarts the Internal Timer
                         elseif ((app.action == 2) && (toc(app.internalTimer) > 1.000))
-                            wS_LogCentral(app, "EVNT", "Action 2 starting...");
+                            wS_LogCentral(app, "EVNT", "Action " + app.action + " starting...");
                             app.Image.ImageSource = snapshot(app.cam);
 
-                            wS_Pipette(app, 0.5, 1.00);
+                            wS_Rotational(app, 90, 1.00); % Rotate to waste with dye in it
 
                             app.action = app.action + 1; % app.action++;
                             app.internalTimer = tic; % Restarts the Internal Timer
                         elseif ((app.action == 3) && (toc(app.internalTimer) > 3.000))
-                            wS_LogCentral(app, "EVNT", "Action 3 starting...");
+                            wS_LogCentral(app, "EVNT", "Action " + app.action + " starting...");
                             app.Image.ImageSource = snapshot(app.cam);
     
-                            wS_Pipette(app, 0.3, 1.00);
+                            wS_VisionDistance(app); % Detect distance to lower lift
     
                             app.action = app.action + 1; % app.action++;
                             app.internalTimer = tic; % Restarts the Internal Timer
                         elseif ((app.action == 4) && (toc(app.internalTimer) > 3.000))
-                            wS_LogCentral(app, "EVNT", "Action 4 starting...");
+                            wS_LogCentral(app, "EVNT", "Action " + app.action + " starting...");
+                            app.Image.ImageSource = snapshot(app.cam);
+
+                            % If something seems wrong...
+                            if (~app.visionPipette_Detected || (app.visionPipette_Distance < 0))
+                                wS_LogCentral(app, "WARN", "Either the pipette was not detected, or the distance is negative.");
+                                pause(3.000);
+                            end
+    
+                            wS_Lift(app, app.visionPipette_Distance, 1.00); % Lower the lift
+    
+                            app.action = app.action + 1; % app.action++;
+                            app.internalTimer = tic; % Restarts the Internal Timer
+                        elseif ((app.action == 5) && (toc(app.internalTimer) > 3.000))
+                            wS_LogCentral(app, "EVNT", "Action " + app.action + " starting...");
+                            app.Image.ImageSource = snapshot(app.cam);
+    
+                            wS_Pipette(app, 0.9, 1.00); % Squeeze in
+    
+                            app.action = app.action + 1; % app.action++;
+                            app.internalTimer = tic; % Restarts the Internal Timer
+                        elseif ((app.action == 6) && (toc(app.internalTimer) > 1.000))
+                            wS_LogCentral(app, "EVNT", "Action " + app.action + " starting...");
+                            app.Image.ImageSource = snapshot(app.cam);
+
+                            wS_Pipette(app, app.pipetteServo_home, 1.00); % Go home (squeeze out)
+
+                            app.action = app.action + 1; % app.action++;
+                            app.internalTimer = tic; % Restarts the Internal Timer
+                        elseif ((app.action == 7) && (toc(app.internalTimer) > 3.000))
+                            wS_LogCentral(app, "EVNT", "Action " + app.action + " starting...");
+                            app.Image.ImageSource = snapshot(app.cam);
+    
+                            wS_Lift(app, app.visionPipette_Distance * -1, 1.00); % Raises back up
+    
+                            app.action = app.action + 1; % app.action++;
+                            app.internalTimer = tic; % Restarts the Internal Timer
+                        elseif ((app.action == 8) && (toc(app.internalTimer) > 3.000))
+                            wS_LogCentral(app, "EVNT", "Action " + app.action + " starting...");
                             app.Image.ImageSource = snapshot(app.cam);
     
                             wS_Rotational(app, 90, 1.00);
     
                             app.action = app.action + 1; % app.action++;
                             app.internalTimer = tic; % Restarts the Internal Timer
-                        elseif ((app.action == 5) && (toc(app.internalTimer) > 3.000))
-                            wS_LogCentral(app, "EVNT", "Action 5 starting...");
-                            app.Image.ImageSource = snapshot(app.cam);
-    
-                            wS_VisionDistance(app);
-                            pause(1);
-                            app.action = app.action + 50;
-    
-                            app.action = app.action + 1; % app.action++;
-                            app.internalTimer = tic; % Restarts the Internal Timer
-                        elseif ((app.action == 6) && (toc(app.internalTimer) > 3.000))
-                            wS_LogCentral(app, "EVNT", "Action 6 starting...");
-                            app.Image.ImageSource = snapshot(app.cam);
-
-                            wS_Lift(app, 4, 1.00);
-
-                            app.action = app.action + 1; % app.action++;
-                            app.internalTimer = tic; % Restarts the Internal Timer
-                        end
-
-                        %{
-                        if (app.action == 1)
-                            % Action 1. Delay of 0.000 seconds
-                            wS_LogCentral(app, "EVNT", "Action 1 starting...");
-                            app.Image.ImageSource = snapshot(app.cam); % Gets a snapshot of the webcam
-
-                            % Moves the lift down into a sample
-                            %wS_Lift(app, -5, 0.50);
-                            findAprilTags(app, snapshot(app.cam), app.aTagCenter, app.aTagSize);
-
-                            app.action = app.action + 1; % app.action++;
-                            app.internalTimer = tic; % Restarts the Internal Timer
-
-                        elseif ((app.action == 2) && (toc(app.internalTimer) > 3.000))
-                            % Action 2. Delay of 3.000 seconds
-                            wS_LogCentral(app, "EVNT", "Action 2 starting...");
-                            app.Image.ImageSource = snapshot(app.cam); % Gets a snapshot of the webcam
-
-                            % Picks up the sample
-                            wS_Pipette(app, 10, 0.75);
-                            pause(2.000);
-                            wS_Pipette(app, -10, 0.75);
-
-                            app.action = app.action + 1; % app.action++;
-                            app.internalTimer = tic; % Restarts the Internal Timer
-
-                        elseif ((app.action == 3) && (toc(app.internalTimer) > 3.000))
-                            % Action 3. Delay of 3.000 seconds
-                            wS_LogCentral(app, "EVNT", "Action 3 starting...");
-                            app.Image.ImageSource = snapshot(app.cam); % Gets a snapshot of the webcam
-
-                            % Moves the lift back up
-                            wS_Lift(app, 5, 1.00);
-
-                            app.action = app.action + 1; % app.action++;
-                            app.internalTimer = tic; % Restarts the Internal Timer
-
-                        elseif ((app.action == 4) && (toc(app.internalTimer) > 3.000))
-                            % Action 4. Delay of 3.000 seconds
-                            wS_LogCentral(app, "EVNT", "Action 4 starting...");
-                            app.Image.ImageSource = snapshot(app.cam); % Gets a snapshot of the webcam
-
-                            % Rotates the rotational base
-                            wS_Rotational(app, 180, 1.00);
-
-                            app.action = app.action + 1; % app.action++;
-                            app.internalTimer = tic; % Restarts the Internal Timer
-
-                        elseif ((app.action == 5) && (toc(app.internalTimer) > 5.000))
-                            % Action 5. Delay of 5.000 seconds
-                            wS_LogCentral(app, "EVNT", "Action 5 starting...");
-                            app.Image.ImageSource = snapshot(app.cam); % Gets a snapshot of the webcam
-
-                            % Lowers the lift again
-                            wS_Lift(app, -5, 0.50);
-
-                            app.action = app.action + 1; % app.action++;
-                            app.internalTimer = tic; % Restarts the Internal Timer
-                            
-                        elseif ((app.action == 6) && (toc(app.internalTimer) > 3.000))
-                            % Action 6. Delay of 3.000 seconds
-                            wS_LogCentral(app, "EVNT", "Action 6 starting...");
-                            app.Image.ImageSource = snapshot(app.cam); % Gets a snapshot of the webcam
-
-                            % Drops the sample
-                            wS_Pipette(app, -10, 0.75);
-                            pause(2.000);
-                            wS_Pipette(app, 10, 0.75);
-
-                            app.action = app.action + 1; % app.action++;
-                            app.internalTimer = tic; % Restarts the Internal Timer
-                            
-                        elseif ((app.action == 7) && (toc(app.internalTimer) > 3.000))
-                            % Action 7. Delay of 3.000 seconds
-                            wS_LogCentral(app, "EVNT", "Action 7 starting...");
-                            app.Image.ImageSource = snapshot(app.cam); % Gets a snapshot of the webcam
-
-                            % Raises the lift
-                            wS_Lift(app, 5, 0.50);
-
-                            app.action = app.action + 1; % app.action++;
-                            app.internalTimer = tic; % Restarts the Internal Timer
-
-                        elseif ((app.action == 8) && (toc(app.internalTimer) > 3.000))
-                            % Action 8. Delay of 3.000 seconds
-                            wS_LogCentral(app, "EVNT", "Action 8 starting...");
-                            app.Image.ImageSource = snapshot(app.cam); % Gets a snapshot of the webcam
-
-                            % OCR detection
-                            wS_VisionOCR(app);
-
-                            app.action = app.action + 1; % app.action++;
-                            app.internalTimer = tic; % Restarts the Internal Timer
-
                         elseif ((app.action == 9) && (toc(app.internalTimer) > 3.000))
-                            % Action 9. Delay of 3.000 seconds
-                            wS_LogCentral(app, "EVNT", "Action 9 starting...");
-                            app.Image.ImageSource = snapshot(app.cam); % Gets a snapshot of the webcam
+                            wS_LogCentral(app, "EVNT", "Action " + app.action + " starting...");
+                            app.Image.ImageSource = snapshot(app.cam);
+    
+                            wS_Pipette(app, 0.9, 1.00); % Squeeze in
+    
+                            app.action = app.action + 1; % app.action++;
+                            app.internalTimer = tic; % Restarts the Internal Timer
+                        elseif ((app.action == 10) && (toc(app.internalTimer) > 1.000))
+                            wS_LogCentral(app, "EVNT", "Action " + app.action + " starting...");
+                            app.Image.ImageSource = snapshot(app.cam);
 
-                            % Pipette distance detection
-                            wS_VisionDistance(app);
+                            wS_Pipette(app, app.pipetteServo_home, 1.00); % Go home (squeeze out)
+
+                            wS_LogCentral(app, "INFO", "Waiting two minutes...");
 
                             app.action = app.action + 1; % app.action++;
                             app.internalTimer = tic; % Restarts the Internal Timer
-                            
+                        elseif ((app.action == 11) && (toc(app.internalTimer) > 120.000))
+                            wS_LogCentral(app, "EVNT", "Action " + app.action + " starting...");
+                            app.Image.ImageSource = snapshot(app.cam);
+
+                            wS_VisionColor(app);
+
+                            app.action = app.action + 1; % app.action++;
+                            app.internalTimer = tic; % Restarts the Internal Timer
                         end
-                        %}
 
                         app.Image.ImageSource = snapshot(app.cam); % Gets a snapshot of the webcam
                         pause(0.100);
