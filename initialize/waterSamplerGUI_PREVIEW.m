@@ -191,6 +191,7 @@ This script is a preview of "waterSamplerGUI.mlapp"
             %app.Image.ImageSource = repmat(pipe_bw, [1, 1, 3]);
             Bounding_Boxes2 = regionprops('table',pipe_bw, 'BoundingBox'); 
             Bounding_Boxes2 = Bounding_Boxes2{:,:}; 
+            app.visionPipette_BBLocation = [Bounding_Boxes2(1), Bounding_Boxes2(2)];
             %figure, imshow(app.Image.ImageSource);
             
             %if pipe detected 
